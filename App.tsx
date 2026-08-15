@@ -1,20 +1,31 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import "./global.css";
+import React, { useEffect, useState } from "react";
+import { Alert } from "react-native";
+import * as ScreenOrientation from "expo-screen-orientation";
+import { Book } from "./src/types/book";
+import { ReaderScreen } from "./src/screens/ReaderScreen";
+import { LibraryScreen } from "./src/screens/LibraryScreen";
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+  const [activeBook, setActiveBook] = useState<Book | null>(null);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+  useEffect(() => {
+    if (!activeBook) {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    }
+  }, [activeBook]);
+
+  if (activeBook) {
+    return (
+      <ReaderScreen
+        book={activeBook}
+        onClose={() => setActiveBook(null)}
+        onOpenSettings={() =>
+          Alert.alert("Area Orang Tua", "Settings belum dibangun")
+        }
+      />
+    );
+  }
+
+  return <LibraryScreen onOpenBook={setActiveBook} />;
+}

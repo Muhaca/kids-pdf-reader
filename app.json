@@ -3,11 +3,12 @@
     "name": "kids-pdf-reader",
     "slug": "kids-pdf-reader",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.muhaca.kidspdfreader"
     },
     "android": {
       "adaptiveIcon": {
@@ -16,10 +17,17 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.muhaca.kidspdfreader"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-audio",
+      "expo-asset",
+      "@config-plugins/react-native-pdf",
+      "@config-plugins/react-native-blob-util"
+    ]
   }
 }

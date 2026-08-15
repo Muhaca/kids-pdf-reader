@@ -1,0 +1,15 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+@import "nativewind/theme";
+
+@theme {
+  --color-story-bg: #EAF4FF;
+  --color-story-sky: #3E7CB1;
+  --color-story-sun: #FFC857;
+  --color-story-coral: #FF6B6B;
+  --color-story-leaf: #4CAF7D;
+  --color-story-plum: #6C5CE7;
+  --color-story-ink: #2B2250;
+}
