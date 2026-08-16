@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, BackHandler, Dimensions, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Asset } from "expo-asset";
+import { File, Directory, Paths } from "expo-file-system";
+import * as ScreenOrientation from "expo-screen-orientation";
 import Pdf from "react-native-pdf";
 import { Book } from "../types/book";
 import { ReaderControls } from "../components/ReaderControls";
 import { ParentalLockButton } from "../components/ParentalLockButton";
-import * as ScreenOrientation from "expo-screen-orientation";
 
 type Props = {
     book: Book;
@@ -19,32 +19,48 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
     const [page, setPage] = useState(1);
     const [numPages, setNumPages] = useState(0);
     const [error, setError] = useState<string | null>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(false);
 
     const initialWindow = Dimensions.get("window");
     const [dimensions, setDimensions] = useState({
         width: initialWindow.width,
         height: initialWindow.height,
     });
-
     const isLandscape = dimensions.width > dimensions.height;
-    const pdfScale = isLandscape ? 0.9 : 1.3;
+    const pdfScale = isLandscape ? 0.9 : 1;
 
+    // download + cache PDF dari R2 (API baru expo-file-system)
     useEffect(() => {
         let mounted = true;
 
         async function resolveSource() {
-            if (!book.pdfSource) {
+            if (!book.pdfUrl) {
                 setError("PDF untuk buku ini belum tersedia.");
                 return;
             }
+
             try {
-                const asset = Asset.fromModule(book.pdfSource);
-                await asset.downloadAsync();
-                if (mounted && asset.localUri) {
-                    setUri(asset.localUri);
+                const destination = new Directory(Paths.cache, "pdfs");
+                destination.create({ intermediates: true, idempotent: true });
+
+                const localFile = new File(destination, `book-${book.id}.pdf`);
+
+                if (localFile.exists) {
+                    if (mounted) setUri(localFile.uri);
+                    return;
                 }
-            } catch {
-                setError("Gagal memuat PDF.");
+
+                if (mounted) setIsDownloading(true);
+                const output = await File.downloadFileAsync(book.pdfUrl, destination);
+
+                if (mounted && output.exists) {
+                    setUri(output.uri);
+                }
+            } catch (e) {
+                if (mounted) setError("Gagal mengunduh PDF. Cek koneksi internet kamu.");
+            } finally {
+                if (mounted) setIsDownloading(false);
             }
         }
 
@@ -54,6 +70,7 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
         };
     }, [book]);
 
+    // tombol back fisik Android
     useEffect(() => {
         const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
             onClose();
@@ -62,6 +79,7 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
         return () => subscription.remove();
     }, [onClose]);
 
+    // buka semua orientasi selama di Reader, kunci portrait lagi saat keluar
     useEffect(() => {
         ScreenOrientation.unlockAsync();
         return () => {
@@ -69,6 +87,7 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
         };
     }, []);
 
+    // pantau perubahan ukuran layar (rotate)
     useEffect(() => {
         const sub = Dimensions.addEventListener("change", ({ window }) => {
             setDimensions({ width: window.width, height: window.height });
@@ -89,8 +108,11 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
                 )}
 
                 {!error && !uri && (
-                    <View className="flex-1 items-center justify-center">
+                    <View className="flex-1 items-center justify-center px-8">
                         <ActivityIndicator color="#FFC857" size="large" />
+                        <Text className="text-white text-xs mt-3">
+                            {isDownloading ? "Mengunduh buku..." : "Menyiapkan buku..."}
+                        </Text>
                     </View>
                 )}
 
@@ -98,9 +120,8 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
                     <>
                         <Pdf
                             source={{ uri, cache: true }}
-                            page={page}
-                            enablePaging={true}
-                            horizontal={true}
+                            enablePaging={!isZoomed}
+                            horizontal={!isZoomed}
                             fitPolicy={0}
                             spacing={0}
                             scale={pdfScale}
@@ -109,15 +130,12 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
                             enableDoubleTapZoom={true}
                             onLoadComplete={(total) => setNumPages(total)}
                             onPageChanged={(p) => setPage(p)}
+                            onScaleChanged={(scale) => setIsZoomed(scale > 1.02)}
                             onError={(err) => console.log("PDF ERROR:", err)}
                             style={{ flex: 1, backgroundColor: "#2B2250" }}
                         />
 
-                        <ReaderControls
-                            page={page}
-                            numPages={numPages}
-                            onClose={onClose}
-                        />
+                        <ReaderControls page={page} numPages={numPages} onClose={onClose} />
 
                         <View className="absolute bottom-6 left-6">
                             <ParentalLockButton onUnlock={onOpenSettings} />

@@ -13,7 +13,7 @@ expo-env.d.ts
 # Native
 .kotlin/
 *.orig.*
-*.jks
+*.jkss
 *.p8
 *.p12
 *.key
