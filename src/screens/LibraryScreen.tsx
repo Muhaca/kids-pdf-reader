@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Text, SectionList } from "react-native";
+import { Dimensions, SectionList, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { BookCard } from "../components/BookCard";
 import { LibraryHeader } from "../components/LibraryHeader";
-import { Book } from "../types/book";
+import { CategorySectionHeader } from "../components/CategorySectionHeader";
+import { PlayfulBackground } from "../components/PlayfulBackground";
 import { fetchBooks } from "../data/mock-books";
+import { Book } from "../types/book";
 
-type Props = {
-    onOpenBook: (book: Book) => void;
-};
-
-type Section = { title: string; data: Book[][]; }; // data dikelompokkan per 2 (numColumns)
+type Section = { title: string; data: Book[][]; };
 
 function groupByCategory(books: Book[]): Section[] {
     const map = new Map<string, Book[]>();
@@ -29,34 +28,68 @@ function groupByCategory(books: Book[]): Section[] {
     });
 }
 
-export function LibraryScreen({ onOpenBook }: Props) {
-
+export function LibraryScreen({ onOpenBook }: { onOpenBook: (b: Book) => void; }) {
+    const initialWindow = Dimensions.get("window");
+    const [dimensions, setDimensions] = useState({
+        width: initialWindow.width,
+        height: initialWindow.height,
+    });
     const [sections, setSections] = useState<Section[]>([]);
+
 
     useEffect(() => {
         fetchBooks().then((books) => setSections(groupByCategory(books)));
     }, []);
 
+    // buka semua orientasi selama di Reader, kunci portrait lagi saat keluar
+    useEffect(() => {
+        ScreenOrientation.unlockAsync();
+        return () => {
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        };
+    }, []);
+
+    // pantau perubahan ukuran layar (rotate)
+    useEffect(() => {
+        const sub = Dimensions.addEventListener("change", ({ window }) => {
+            setDimensions({ width: window.width, height: window.height });
+        });
+        return () => sub.remove();
+    }, []);
+
     return (
         <SafeAreaView className="flex-1 bg-story-bg" edges={["top"]}>
             <LibraryHeader />
-            <SectionList
-                sections={sections}
-                keyExtractor={(row, i) => row.map((b) => b.id).join("-") + i}
-                contentContainerStyle={{ padding: 12, paddingBottom: 24 }}
-                renderSectionHeader={({ section }) => (
-                    <Text className="text-story-ink font-extrabold text-lg mt-4 mb-2 px-1">
-                        {section.title}
-                    </Text>
-                )}
-                renderItem={({ item: row }) => (
-                    <>
-                        {row.map((book, index) => (
-                            <BookCard key={book.id} book={book} index={index} onPress={onOpenBook} />
-                        ))}
-                    </>
-                )}
-            />
+            <PlayfulBackground />
+
+            <View style={{ flex: 1, minHeight: dimensions.height }}>
+
+                <SectionList
+                    sections={sections}
+                    keyExtractor={(row, i) => row.map((b) => b.id).join("-") + i}
+                    style={{ backgroundColor: "transparent" }}
+                    contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 24 }}
+                    renderSectionHeader={({ section }) => (
+                        <CategorySectionHeader
+                            title={section.title}
+                            index={sections.findIndex((s) => s.title === section.title)}
+                        />
+                    )}
+                    renderItem={({ item: row, index }) => (
+                        <View style={{ flexDirection: "row" }}>
+                            {row.map((book, i) => (
+                                <BookCard
+                                    key={book.id}
+                                    book={book}
+                                    index={index * 2 + i}
+                                    onPress={onOpenBook}
+                                />
+                            ))}
+                            {row.length === 1 && <View className="w-1/2" />}
+                        </View>
+                    )}
+                />
+            </View>
         </SafeAreaView>
     );
 }

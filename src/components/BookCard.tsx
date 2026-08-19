@@ -1,11 +1,12 @@
-import { Book } from "@/src/types/book";
 import { Pressable, Text, View } from "react-native";
+import { Image } from "expo-image";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
     withSpring,
     FadeInDown,
 } from "react-native-reanimated";
+import { Book } from "../types/book";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -23,6 +24,8 @@ export function BookCard({ book, index, onPress }: Props) {
     }));
 
     const filledDots = Math.round(book.progress * 5);
+    const isFinished = book.progress >= 1;
+    const rotateDeg = index % 2 === 0 ? "-1.5deg" : "1.5deg";
 
     return (
         <Animated.View
@@ -37,19 +40,29 @@ export function BookCard({ book, index, onPress }: Props) {
             >
                 <View
                     style={{ backgroundColor: book.accent }}
-                    className="aspect-[4/5] rounded-3xl items-center justify-center shadow-md"
+                    className="aspect-4/5 rounded-[28px] overflow-hidden items-center justify-center border-4 border-white shadow-md"
                 >
-                    <Text style={{ fontSize: 56 }}>{book.emoji}</Text>
-                    {book.progress === 1 && (
-                        <View className="absolute top-2 right-2 bg-white/90 rounded-full w-7 h-7 items-center justify-center">
-                            <Text>⭐</Text>
+                    {book.coverUrl ? (
+                        <Image
+                            source={{ uri: book.coverUrl }}
+                            style={{ width: "100%", height: "100%", color: book.accent }}
+                            contentFit="cover"
+                            transition={300}
+                        />
+                    ) : (
+                        <Text style={{ fontSize: 52 }}>{book.emoji ?? "📖"}</Text>
+                    )}
+
+                    {isFinished && (
+                        <View className="absolute top-2 right-2 bg-black/40 rounded-full px-2 py-1">
+                            <Text style={{ fontSize: 10 }}>⭐</Text>
                         </View>
                     )}
                 </View>
 
                 <Text
                     numberOfLines={2}
-                    className="text-story-ink font-bold text-center mt-2 text-sm leading-5"
+                    className="text-story-ink dark:text-white font-bold text-center mt-2 text-sm leading-5"
                 >
                     {book.title}
                 </Text>

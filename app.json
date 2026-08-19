@@ -3,9 +3,9 @@
     "name": "kids-pdf-reader",
     "slug": "kids-pdf-reader",
     "version": "1.0.0",
-    "orientation": "default",
+    "orientation": "landscape",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.muhaca.kidspdfreader"
@@ -27,7 +27,8 @@
       "expo-audio",
       "expo-asset",
       "@config-plugins/react-native-pdf",
-      "@config-plugins/react-native-blob-util"
+      "@config-plugins/react-native-blob-util",
+      "expo-image"
     ]
   }
 }

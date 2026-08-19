@@ -14,6 +14,11 @@ type Props = {
     onOpenSettings: () => void;
 };
 
+function filenameFromUrl(url: string): string {
+    const segments = url.split("/");
+    return segments[segments.length - 1] || `book-${Date.now()}.pdf`;
+}
+
 export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
     const [uri, setUri] = useState<string | null>(null);
     const [page, setPage] = useState(1);
@@ -44,7 +49,8 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
                 const destination = new Directory(Paths.cache, "pdfs");
                 destination.create({ intermediates: true, idempotent: true });
 
-                const localFile = new File(destination, `book-${book.id}.pdf`);
+                const filename = filenameFromUrl(book.pdfUrl);
+                const localFile = new File(destination, filename);
 
                 if (localFile.exists) {
                     if (mounted) setUri(localFile.uri);
@@ -58,6 +64,7 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
                     setUri(output.uri);
                 }
             } catch (e) {
+                console.log("DOWNLOAD ERROR:", e);
                 if (mounted) setError("Gagal mengunduh PDF. Cek koneksi internet kamu.");
             } finally {
                 if (mounted) setIsDownloading(false);
@@ -125,9 +132,9 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
                             fitPolicy={0}
                             spacing={0}
                             scale={pdfScale}
-                            minScale={isLandscape ? 0.9 : 1}
+                            minScale={isLandscape ? 0.6 : 1}
                             maxScale={3}
-                            enableDoubleTapZoom={true}
+                            enableDoubleTapZoom={false}
                             onLoadComplete={(total) => setNumPages(total)}
                             onPageChanged={(p) => setPage(p)}
                             onScaleChanged={(scale) => setIsZoomed(scale > 1.02)}
