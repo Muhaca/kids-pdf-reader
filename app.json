@@ -18,7 +18,17 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.muhaca.kidspdfreader"
+      "package": "com.muhaca.kidspdfreader",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.DOWNLOAD_WITHOUT_NOTIFICATION",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -28,7 +38,13 @@
       "expo-asset",
       "@config-plugins/react-native-pdf",
       "@config-plugins/react-native-blob-util",
-      "expo-image"
-    ]
+      "expo-image",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a636802f-ba4d-4f3d-9d20-fe725854d367"
+      }
+    }
   }
 }
