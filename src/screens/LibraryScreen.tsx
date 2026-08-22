@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Dimensions, SectionList, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SectionList, Text, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { BookCard } from "../components/BookCard";
 import { LibraryHeader } from "../components/LibraryHeader";
 import { CategorySectionHeader } from "../components/CategorySectionHeader";
@@ -29,19 +30,16 @@ function groupByCategory(books: Book[]): Section[] {
 }
 
 export function LibraryScreen({ onOpenBook }: { onOpenBook: (b: Book) => void; }) {
-    const initialWindow = Dimensions.get("window");
-    const [dimensions, setDimensions] = useState({
-        width: initialWindow.width,
-        height: initialWindow.height,
-    });
+    const insets = useSafeAreaInsets();
     const [sections, setSections] = useState<Section[]>([]);
-
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchBooks().then((books) => setSections(groupByCategory(books)));
+        fetchBooks()
+            .then((books) => setSections(groupByCategory(books)))
+            .finally(() => setLoading(false));
     }, []);
 
-    // buka semua orientasi selama di Reader, kunci portrait lagi saat keluar
     useEffect(() => {
         ScreenOrientation.unlockAsync();
         return () => {
@@ -49,26 +47,47 @@ export function LibraryScreen({ onOpenBook }: { onOpenBook: (b: Book) => void; }
         };
     }, []);
 
-    // pantau perubahan ukuran layar (rotate)
-    useEffect(() => {
-        const sub = Dimensions.addEventListener("change", ({ window }) => {
-            setDimensions({ width: window.width, height: window.height });
-        });
-        return () => sub.remove();
-    }, []);
-
     return (
-        <SafeAreaView className="flex-1 bg-story-bg" edges={["top"]}>
+        // PENTING: flex lewat style, BUKAN className
+        <SafeAreaView
+            style={{ flex: 1 }}
+            className="bg-story-bg dark:bg-story-bg-dark"
+            edges={["top", "bottom"]}
+        >
             <LibraryHeader />
             <PlayfulBackground />
 
-            <View style={{ flex: 1, minHeight: dimensions.height }}>
+            {loading && (
+                <Animated.View
+                    entering={FadeIn}
+                    style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+                >
+                    <Text style={{ fontSize: 48 }}>📚</Text>
+                    <Text className="text-story-ink font-bold mt-3">Menyiapkan cerita...</Text>
+                </Animated.View>
+            )}
 
+            {!loading && sections.length === 0 && (
+                <View
+                    style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}
+                >
+                    <Text style={{ fontSize: 48 }}>🦉</Text>
+                    <Text className="text-story-ink font-bold mt-3 text-center">
+                        Belum ada buku nih. Coba lagi nanti ya!
+                    </Text>
+                </View>
+            )}
+
+            {!loading && sections.length > 0 && (
                 <SectionList
                     sections={sections}
                     keyExtractor={(row, i) => row.map((b) => b.id).join("-") + i}
-                    style={{ backgroundColor: "transparent" }}
-                    contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 24 }}
+                    style={{ flex: 1, backgroundColor: "transparent" }}
+                    contentContainerStyle={{
+                        paddingHorizontal: 10,
+                        paddingBottom: insets.bottom + 32,
+                    }}
+                    showsVerticalScrollIndicator={false}
                     renderSectionHeader={({ section }) => (
                         <CategorySectionHeader
                             title={section.title}
@@ -89,7 +108,7 @@ export function LibraryScreen({ onOpenBook }: { onOpenBook: (b: Book) => void; }
                         </View>
                     )}
                 />
-            </View>
+            )}
         </SafeAreaView>
     );
 }

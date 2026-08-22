@@ -3,11 +3,22 @@
 @import "nativewind/theme";
 
 @theme {
-  --color-story-bg: #EAF4FF;
-  --color-story-sky: #3E7CB1;
-  --color-story-sun: #FFC857;
-  --color-story-coral: #FF6B6B;
-  --color-story-leaf: #4CAF7D;
-  --color-story-plum: #6C5CE7;
-  --color-story-ink: #2B2250;
+  /* Light mode - krem hangat, luminance diturunkan dari sebelumnya */
+  --color-story-bg: #F0E4CC;
+  /* turun dari #FBF3E3, lebih redup ~8-10% */
+  --color-story-paper: #E8D9BC;
+  /* untuk card/alt section, lebih gelap lagi */
+  --color-story-rust: #C85A34;
+  --color-story-teal: #1B5F54;
+  --color-story-mustard: #D99730;
+  --color-story-berry: #B83A54;
+  --color-story-ink: #362820;
+
+  /* elemen "putih" diganti off-white hangat, jangan pernah #FFFFFF murni */
+  --color-story-cream: #FBF6EA;
+
+  /* Dark mode - JANGAN pakai hitam murni, pakai coklat gelap hangat */
+  --color-story-bg-dark: #221B14;
+  --color-story-paper-dark: #2C2319;
+  --color-story-ink-dark: #EFE2C9;
 }

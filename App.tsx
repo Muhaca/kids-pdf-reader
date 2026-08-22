@@ -1,13 +1,16 @@
 import "./global.css";
 import React, { useEffect, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, Text, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { useFonts, Baloo2_700Bold, Baloo2_600SemiBold, Baloo2_500Medium } from "@expo-google-fonts/baloo-2";
 import { Book } from "./src/types/book";
 import { ReaderScreen } from "./src/screens/ReaderScreen";
 import { LibraryScreen } from "./src/screens/LibraryScreen";
 
 export default function App() {
   const [activeBook, setActiveBook] = useState<Book | null>(null);
+  const [fontsLoaded] = useFonts({ Baloo2_700Bold, Baloo2_600SemiBold, Baloo2_500Medium });
 
   useEffect(() => {
     if (!activeBook) {
@@ -15,17 +18,25 @@ export default function App() {
     }
   }, [activeBook]);
 
-  if (activeBook) {
+  if (!fontsLoaded) {
     return (
-      <ReaderScreen
-        book={activeBook}
-        onClose={() => setActiveBook(null)}
-        onOpenSettings={() =>
-          Alert.alert("Area Orang Tua", "Settings belum dibangun")
-        }
-      />
+      <View style={{ flex: 1, backgroundColor: "#FBF3E3", alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ fontSize: 40 }}>📖</Text>
+      </View>
     );
   }
 
-  return <LibraryScreen onOpenBook={setActiveBook} />;
+  return (
+    <SafeAreaProvider>
+      {activeBook ? (
+        <ReaderScreen
+          book={activeBook}
+          onClose={() => setActiveBook(null)}
+          onOpenSettings={() => Alert.alert("Area Orang Tua", "Settings belum dibangun")}
+        />
+      ) : (
+        <LibraryScreen onOpenBook={setActiveBook} />
+      )}
+    </SafeAreaProvider>
+  );
 }

@@ -1,4 +1,13 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import { StyleSheet, View } from "react-native";
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withSequence,
+    withTiming,
+    withDelay,
+} from "react-native-reanimated";
 
 const DECORATIONS = [
     { emoji: "⭐", top: "5%", left: "8%", size: 20, rotate: "-15deg" },
@@ -12,24 +21,69 @@ const DECORATIONS = [
     { emoji: "✨", top: "94%", right: "20%", size: 16, rotate: "-10deg" },
 ];
 
+const DOTS = Array.from({ length: 18 }).map((_, i) => ({
+    top: `${(i * 37) % 100}%`,
+    left: `${(i * 53) % 100}%`,
+    size: i % 3 === 0 ? 5 : 3,
+}));
+
+function FloatingDecoration({ d, delay }: { d: (typeof DECORATIONS)[number]; delay: number; }) {
+    const offset = useSharedValue(0);
+
+    useEffect(() => {
+        offset.value = withDelay(
+            delay,
+            withRepeat(
+                withSequence(
+                    withTiming(-8, { duration: 1800 }),
+                    withTiming(0, { duration: 1800 })
+                ),
+                -1,
+                true
+            )
+        );
+    }, []);
+
+    const style = useAnimatedStyle(() => ({
+        transform: [{ translateY: offset.value }, { rotate: d.rotate }],
+    }));
+
+    return (
+        <Animated.Text
+            style={[
+                {
+                    position: "absolute",
+                    top: d.top as any,
+                    left: (d as any).left,
+                    right: (d as any).right,
+                    fontSize: d.size,
+                    opacity: 0.18,
+                },
+                style,
+            ]}
+        >
+            {d.emoji}
+        </Animated.Text>
+    );
+}
+
 export function PlayfulBackground() {
     return (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            {DECORATIONS.map((d, i) => (
-                <Text
+            {DOTS.map((d, i) => (
+                <View
                     key={i}
                     style={{
                         position: "absolute",
                         top: d.top as any,
-                        left: (d as any).left,
-                        right: (d as any).right,
-                        fontSize: d.size,
-                        opacity: 0.16,
-                        transform: [{ rotate: d.rotate }],
+                        left: d.left as any,
+                        width: d.size,
+                        height: d.size,
+                        borderRadius: d.size / 2,
+                        backgroundColor: "#D9643A",
+                        opacity: 0.08,
                     }}
-                >
-                    {d.emoji}
-                </Text>
+                />
             ))}
         </View>
     );

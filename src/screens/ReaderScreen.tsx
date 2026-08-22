@@ -7,6 +7,7 @@ import Pdf from "react-native-pdf";
 import { Book } from "../types/book";
 import { ReaderControls } from "../components/ReaderControls";
 import { ParentalLockButton } from "../components/ParentalLockButton";
+import { CelebrationOverlay } from "../components/CelebrationOverlay";
 
 type Props = {
     book: Book;
@@ -26,6 +27,8 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
     const [error, setError] = useState<string | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [showCelebration, setShowCelebration] = useState(false);
+    const [celebrationShown, setCelebrationShown] = useState(false);
 
     const initialWindow = Dimensions.get("window");
     const [dimensions, setDimensions] = useState({
@@ -35,7 +38,6 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
     const isLandscape = dimensions.width > dimensions.height;
     const pdfScale = isLandscape ? 0.9 : 1;
 
-    // download + cache PDF dari R2 (API baru expo-file-system)
     useEffect(() => {
         let mounted = true;
 
@@ -77,7 +79,6 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
         };
     }, [book]);
 
-    // tombol back fisik Android
     useEffect(() => {
         const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
             onClose();
@@ -86,7 +87,6 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
         return () => subscription.remove();
     }, [onClose]);
 
-    // buka semua orientasi selama di Reader, kunci portrait lagi saat keluar
     useEffect(() => {
         ScreenOrientation.unlockAsync();
         return () => {
@@ -94,7 +94,6 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
         };
     }, []);
 
-    // pantau perubahan ukuran layar (rotate)
     useEffect(() => {
         const sub = Dimensions.addEventListener("change", ({ window }) => {
             setDimensions({ width: window.width, height: window.height });
@@ -102,13 +101,24 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
         return () => sub.remove();
     }, []);
 
+    useEffect(() => {
+        if (numPages > 0 && page === numPages && !celebrationShown) {
+            setShowCelebration(true);
+            setCelebrationShown(true);
+        }
+    }, [page, numPages, celebrationShown]);
+
     return (
-        <SafeAreaView className="flex-1 bg-story-ink" edges={["top", "bottom"]}>
+        <SafeAreaView className="flex-1 bg-[#1F6F63]" edges={["top", "bottom"]}>
             <View style={{ flex: 1, minHeight: dimensions.height }}>
                 {error && (
                     <View className="flex-1 items-center justify-center px-8">
-                        <Text className="text-white text-center text-base mb-4">{error}</Text>
-                        <Text onPress={onClose} className="text-story-sun font-bold">
+                        <Text style={{ fontSize: 48 }}>🦉</Text>
+                        <Text className="text-white text-center text-base mt-3 mb-4">{error}</Text>
+                        <Text
+                            onPress={onClose}
+                            className="text-story-ink bg-story-sun font-extrabold px-6 py-3 rounded-full overflow-hidden"
+                        >
                             Kembali ke koleksi
                         </Text>
                     </View>
@@ -139,7 +149,7 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
                             onPageChanged={(p) => setPage(p)}
                             onScaleChanged={(scale) => setIsZoomed(scale > 1.02)}
                             onError={(err) => console.log("PDF ERROR:", err)}
-                            style={{ flex: 1, backgroundColor: "#2B2250" }}
+                            style={{ flex: 1, backgroundColor: "#D99730" }}
                         />
 
                         <ReaderControls page={page} numPages={numPages} onClose={onClose} />
@@ -147,6 +157,10 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
                         <View className="absolute bottom-6 left-6">
                             <ParentalLockButton onUnlock={onOpenSettings} />
                         </View>
+
+                        {showCelebration && (
+                            <CelebrationOverlay onClose={() => setShowCelebration(false)} />
+                        )}
                     </>
                 )}
             </View>
