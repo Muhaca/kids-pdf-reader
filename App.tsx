@@ -1,6 +1,6 @@
 import "./global.css";
 import React, { useEffect, useState } from "react";
-import { Alert, Text, View } from "react-native";
+import { Alert } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useFonts, Baloo2_700Bold, Baloo2_600SemiBold, Baloo2_500Medium } from "@expo-google-fonts/baloo-2";
@@ -10,21 +10,14 @@ import { LibraryScreen } from "./src/screens/LibraryScreen";
 
 export default function App() {
   const [activeBook, setActiveBook] = useState<Book | null>(null);
-  const [fontsLoaded] = useFonts({ Baloo2_700Bold, Baloo2_600SemiBold, Baloo2_500Medium });
+  // Muat font latar belakang tanpa menahan frame pertama (lazy start).
+  useFonts({ Baloo2_700Bold, Baloo2_600SemiBold, Baloo2_500Medium });
 
   useEffect(() => {
     if (!activeBook) {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
     }
   }, [activeBook]);
-
-  if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, backgroundColor: "#FBF3E3", alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ fontSize: 40 }}>📖</Text>
-      </View>
-    );
-  }
 
   return (
     <SafeAreaProvider>

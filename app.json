@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "kids-pdf-reader",
+    "name": "Maca",
     "slug": "kids-pdf-reader",
     "version": "1.0.0",
     "orientation": "default",
@@ -20,13 +20,8 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.muhaca.kidspdfreader",
       "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.DOWNLOAD_WITHOUT_NOTIFICATION",
         "android.permission.ACCESS_NETWORK_STATE"
       ]
     },
@@ -34,12 +29,22 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-audio",
       "expo-asset",
       "@config-plugins/react-native-pdf",
-      "@config-plugins/react-native-blob-util",
       "expo-image",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F0E4CC",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "dark": {
+            "backgroundColor": "#221B14",
+            "image": "./assets/splash-icon.png"
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -80,9 +80,9 @@ export function PlayfulBackground() {
                         width: d.size,
                         height: d.size,
                         borderRadius: d.size / 2,
-                        backgroundColor: "#D9643A",
                         opacity: 0.08,
                     }}
+                    className="bg-story-coral"
                 />
             ))}
         </View>

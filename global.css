@@ -11,11 +11,16 @@
   --color-story-rust: #C85A34;
   --color-story-teal: #1B5F54;
   --color-story-mustard: #D99730;
+  --color-story-mustard-light: #E8A33D;
   --color-story-berry: #B83A54;
+  --color-story-coral: #D9643A;
   --color-story-ink: #362820;
+  --color-story-sun: #FFC857;
+  --color-story-forest: #1F6F63;
 
   /* elemen "putih" diganti off-white hangat, jangan pernah #FFFFFF murni */
   --color-story-cream: #FBF6EA;
+  --color-story-cream-soft: #F5E8CE;
 
   /* Dark mode - JANGAN pakai hitam murni, pakai coklat gelap hangat */
   --color-story-bg-dark: #221B14;

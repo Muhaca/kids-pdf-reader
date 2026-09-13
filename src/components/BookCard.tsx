@@ -15,9 +15,10 @@ type Props = {
     book: Book;
     index: number;
     onPress: (book: Book) => void;
+    compact?: boolean;
 };
 
-export function BookCard({ book, index, onPress }: Props) {
+export function BookCard({ book, index, onPress, compact = false }: Props) {
     const scale = useSharedValue(1);
     const rotate = useSharedValue(0);
 
@@ -40,8 +41,8 @@ export function BookCard({ book, index, onPress }: Props) {
 
     return (
         <Animated.View
-            entering={FadeInDown.delay(index * 70).springify()}
-            className="w-1/2 p-2"
+            entering={FadeInDown.delay((compact ? index * 40 : index * 70)).springify()}
+            className={compact ? "w-32" : "w-1/2 p-2"}
         >
             <AnimatedPressable
                 style={animatedStyle}
@@ -51,7 +52,11 @@ export function BookCard({ book, index, onPress }: Props) {
             >
                 <View
                     style={{ backgroundColor: book.accent, transform: [{ rotate: rotateDeg }] }}
-                    className="aspect-4/5 rounded-[32px] overflow-hidden items-center justify-center border-4 border-story-cream shadow-md"
+                    className={
+                        compact
+                            ? "aspect-4/5 rounded-2xl overflow-hidden items-center justify-center border-2 border-story-cream shadow-sm"
+                            : "aspect-4/5 rounded-[32px] overflow-hidden items-center justify-center border-4 border-story-cream shadow-md"
+                    }
                 >
                     {book.coverUrl ? (
                         <Image
@@ -65,10 +70,7 @@ export function BookCard({ book, index, onPress }: Props) {
                     )}
 
                     {isFinished && (
-                        <View
-                            style={{ backgroundColor: "#D9643A", borderColor: "#F5E8CE" }}
-                            className="absolute top-2 right-2 rounded-full w-9 h-9 items-center justify-center border-2 shadow-sm"
-                        >
+                        <View className="absolute top-2 right-2 rounded-full w-9 h-9 items-center justify-center border-2 border-story-cream-soft bg-story-coral shadow-sm">
                             <Text style={{ fontSize: 16 }}>🏆</Text>
                         </View>
                     )}
@@ -76,8 +78,8 @@ export function BookCard({ book, index, onPress }: Props) {
 
                 <Text
                     numberOfLines={2}
-                    style={{ fontFamily: "Baloo2_700Bold", color: "#3A2B23" }}
-                    className="text-center mt-2 text-sm leading-5"
+                    className="text-story-ink dark:text-story-ink-dark text-center mt-2 text-sm leading-5"
+                    style={{ fontFamily: "Baloo2_700Bold" }}
                 >
                     {book.title}
                 </Text>

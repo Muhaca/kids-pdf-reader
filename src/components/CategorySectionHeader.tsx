@@ -4,9 +4,19 @@ const ACCENT_ROTATION = ["#FFC857", "#FF6B6B", "#4CAF7D", "#6C5CE7", "#3E7CB1", 
 
 const CATEGORY_ICONS: Record<string, string> = {
     kebiasaan: "🌱",
-    "dongeng nusantara": "🏯",
-    edukasi: "🎓",
+    keluarga: "👨‍👩‍👧",
+    pertemanan: "🤝",
+    hewan: "🦊",
+    "alam & lingkungan": "🌳",
     petualangan: "🗺️",
+    "dongeng & legenda": "🏯",
+    "dongeng nusantara": "🏯",
+    "edukasi & sains": "🎓",
+    edukasi: "🎓",
+    makanan: "🍰",
+    "puisi & sastra": "📜",
+    "karakter & emosi": "💛",
+    remaja: "🌟",
 };
 
 function getCategoryIcon(title: string) {
@@ -16,9 +26,10 @@ function getCategoryIcon(title: string) {
 type Props = {
     title: string;
     index: number;
+    count?: number;
 };
 
-export function CategorySectionHeader({ title, index }: Props) {
+export function CategorySectionHeader({ title, index, count }: Props) {
     const accent = ACCENT_ROTATION[index % ACCENT_ROTATION.length];
     const icon = getCategoryIcon(title);
 
@@ -32,6 +43,11 @@ export function CategorySectionHeader({ title, index }: Props) {
                     <Text style={{ fontSize: 14 }}>{icon}</Text>
                 </View>
                 <Text className="text-white font-extrabold text-base">{title}</Text>
+                {count !== undefined && (
+                    <View className="ml-2 bg-white/25 rounded-full px-2 py-0.5">
+                        <Text className="text-white font-bold text-xs">{count}</Text>
+                    </View>
+                )}
             </View>
         </View>
     );
