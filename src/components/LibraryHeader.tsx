@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -10,12 +10,11 @@ import Animated, {
 import { ParentalLockButton } from "./ParentalLockButton";
 
 type Props = {
-    onOpenHelp: () => void;
     onOpenSettings: () => void;
     locked?: boolean;
 };
 
-export function LibraryHeader({ onOpenHelp, onOpenSettings, locked = false }: Props) {
+export function LibraryHeader({ onOpenSettings, locked = false }: Props) {
     const wiggle = useSharedValue(0);
 
     useEffect(() => {
@@ -36,48 +35,31 @@ export function LibraryHeader({ onOpenHelp, onOpenSettings, locked = false }: Pr
 
     return (
         <View
-            className="rounded-b-[36px] px-5 pt-4 pb-7 overflow-hidden border-[3px] border-story-cream bg-story-mustard shadow-sm"
+            className="rounded-b-[28px] px-4 pt-2 pb-3 overflow-hidden border-[3px] border-story-cream bg-story-mustard shadow-sm"
         >
-            {/* aksen dot pattern, bukan sparkle emoji acak */}
-            <View style={{ position: "absolute", top: 14, right: 24, flexDirection: "row", gap: 6 }}>
-                <View className="w-1.5 h-1.5 rounded-full bg-story-mustard-light" />
-                <View className="w-1.5 h-1.5 rounded-full bg-story-coral" />
-                <View className="w-1.5 h-1.5 rounded-full bg-story-cream-soft" />
-            </View>
-
             <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center gap-3">
-                    <View className="rounded-full w-14 h-14 items-center justify-center border-[3px] border-story-cream-soft bg-story-mustard-light shadow-sm">
-                        <Animated.Text style={[{ fontSize: 28 }, mascotStyle]}>🦉</Animated.Text>
+                    <View className="rounded-full w-11 h-11 items-center justify-center border-[3px] border-story-cream-soft bg-story-mustard-light shadow-sm">
+                        <Animated.Text style={[{ fontSize: 24 }, mascotStyle]}>🦉</Animated.Text>
                     </View>
                     <View>
                         <Text
                             className="text-story-cream"
-                            style={{ fontFamily: "Baloo2_700Bold", fontSize: 24 }}
+                            style={{ fontFamily: "Baloo2_700Bold", fontSize: 20 }}
                         >
                             Halo, teman Maca!
                         </Text>
                         <Text
                             className="text-story-cream-soft"
-                            style={{ fontFamily: "Baloo2_500Medium", fontSize: 13 }}
+                            style={{ fontFamily: "Baloo2_500Medium", fontSize: 12 }}
                         >
                             Yuk pilih cerita seru hari ini
                         </Text>
                     </View>
                 </View>
 
-                <View className="flex-col items-end gap-2">
+                <View className="items-end">
                     <ParentalLockButton onUnlock={onOpenSettings} locked={locked} />
-                    <Pressable
-                        onPress={onOpenHelp}
-                        accessibilityRole="button"
-                        accessibilityLabel="Bantuan"
-                        className="rounded-full w-9 h-9 items-center justify-center bg-black/25"
-                    >
-                        <Text className="text-white font-extrabold" style={{ fontSize: 16 }}>
-                            ?
-                        </Text>
-                    </Pressable>
                 </View>
             </View>
         </View>

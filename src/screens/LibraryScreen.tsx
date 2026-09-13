@@ -9,9 +9,8 @@ import { BookCard } from "../components/BookCard";
 import { LibraryHeader } from "../components/LibraryHeader";
 import { CategorySectionHeader } from "../components/CategorySectionHeader";
 import { CategoryShelf } from "../components/CategoryShelf";
-import { PlayfulBackground } from "../components/PlayfulBackground";
 import { OnboardingOverlay } from "../components/OnboardingOverlay";
-import { fetchBooks } from "../data/mock-books";
+import { fetchBooks } from "../data/books";
 import { getAllProgress, getItem, readManifestCache, setItem } from "../services/storage";
 import { Book } from "../types/book";
 
@@ -58,12 +57,6 @@ function LibraryScreenImpl({
     const [loading, setLoading] = useState(cachedBooks === undefined);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [bgReady, setBgReady] = useState(false);
-
-    useEffect(() => {
-        const id = requestAnimationFrame(() => setBgReady(true));
-        return () => cancelAnimationFrame(id);
-    }, []);
 
     useEffect(() => {
         if (getItem(ONBOARDING_KEY) !== "1") {
@@ -140,8 +133,7 @@ function LibraryScreenImpl({
             className="bg-story-bg dark:bg-story-bg-dark"
             edges={["top", "bottom"]}
         >
-            <LibraryHeader onOpenHelp={() => setShowOnboarding(true)} onOpenSettings={onOpenSettings} locked={locked} />
-            {bgReady && <PlayfulBackground />}
+            <LibraryHeader onOpenSettings={onOpenSettings} locked={locked} />
 
             {loading && (
                 <Animated.View

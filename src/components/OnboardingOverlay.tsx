@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { PlayfulBackground } from "./PlayfulBackground";
 
 const STEPS = [
     {
@@ -10,9 +9,9 @@ const STEPS = [
         body: "Ketuk salah satu kartu buku untuk membuka dan mulai membawanya.",
     },
     {
-        emoji: "📖🔊",
-        title: "Baca & dengarkan",
-        body: "Geser halaman ke kiri. Tekan tombol suara supaya cerita dibacakan.",
+        emoji: "📖",
+        title: "Baca cerita",
+        body: "Geser halaman ke kiri untuk membuka cerita.",
     },
     {
         emoji: "🔒",
@@ -23,13 +22,7 @@ const STEPS = [
 
 export function OnboardingOverlay({ onClose }: { onClose: () => void }) {
     const [step, setStep] = useState(0);
-    const [bgReady, setBgReady] = useState(false);
     const isLast = step === STEPS.length - 1;
-
-    useEffect(() => {
-        const id = requestAnimationFrame(() => setBgReady(true));
-        return () => cancelAnimationFrame(id);
-    }, []);
 
     return (
         <Animated.View
@@ -39,7 +32,6 @@ export function OnboardingOverlay({ onClose }: { onClose: () => void }) {
             className="items-center justify-center"
         >
             <View className="flex-1 w-full bg-[#221B14]/95 items-center justify-center px-8">
-                {bgReady && <PlayfulBackground />}
 
                 <Text style={{ fontSize: 72 }}>{STEPS[step].emoji}</Text>
                 <Text className="text-story-cream font-extrabold text-2xl text-center mt-4">
