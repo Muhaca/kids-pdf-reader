@@ -17,7 +17,7 @@ const STEPS = [
     {
         emoji: "🔒",
         title: "Area orang tua",
-        body: "Tahan tombol kunci selama 3 detik untuk membuka pengaturan orang tua.",
+        body: "Tahan tombol kunci di pojok kanan atas selama 1,5 detik untuk membuka pengaturan orang tua.",
     },
 ];
 

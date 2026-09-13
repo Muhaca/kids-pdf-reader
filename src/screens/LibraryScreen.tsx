@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, Pressable, ScrollView, Text, useColorScheme, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -30,12 +30,20 @@ function chunkRows(items: Book[]): Book[][] {
     return rows;
 }
 
-export function LibraryScreen({ onOpenBook }: { onOpenBook: (book: Book) => void }) {
+function LibraryScreenImpl({
+    onOpenBook,
+    onOpenSettings,
+    locked = false,
+}: {
+    onOpenBook: (book: Book) => void;
+    onOpenSettings: () => void;
+    locked?: boolean;
+}) {
     const insets = useSafeAreaInsets();
     const listRef = useRef<FlatList<ShelfRow>>(null);
 
-    const cachedBooks = readManifestCache()?.books;
-    const initialProgress = getAllProgress();
+    const cachedBooks = useMemo(() => readManifestCache()?.books, []);
+    const initialProgress = useMemo(() => getAllProgress(), []);
     const initialBooks = (cachedBooks ?? []).map((b) => ({
         ...b,
         progress: initialProgress[b.id] ?? b.progress ?? 0,
@@ -132,7 +140,7 @@ export function LibraryScreen({ onOpenBook }: { onOpenBook: (book: Book) => void
             className="bg-story-bg dark:bg-story-bg-dark"
             edges={["top", "bottom"]}
         >
-            <LibraryHeader onOpenHelp={() => setShowOnboarding(true)} />
+            <LibraryHeader onOpenHelp={() => setShowOnboarding(true)} onOpenSettings={onOpenSettings} locked={locked} />
             {bgReady && <PlayfulBackground />}
 
             {loading && (
@@ -223,6 +231,8 @@ export function LibraryScreen({ onOpenBook }: { onOpenBook: (book: Book) => void
         </SafeAreaView>
     );
 }
+
+export const LibraryScreen = memo(LibraryScreenImpl);
 
 type ChipsProps = {
     titles: string[];

@@ -8,17 +8,15 @@ import { usePdfLoader } from "../hooks/usePdfLoader";
 import { useReadAloud } from "../hooks/useReadAloud";
 import { setProgress } from "../services/storage";
 import { ReaderControls } from "../components/ReaderControls";
-import { ParentalLockButton } from "../components/ParentalLockButton";
 import { CelebrationOverlay } from "../components/CelebrationOverlay";
 import { IconButton } from "../components/IconButton";
 
 type Props = {
     book: Book;
     onClose: () => void;
-    onOpenSettings: () => void;
 };
 
-export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
+export function ReaderScreen({ book, onClose }: Props) {
     const { uri, error, isDownloading } = usePdfLoader(book);
     const pdfRef = useRef<PdfRef>(null);
 
@@ -152,10 +150,6 @@ export function ReaderScreen({ book, onClose, onOpenSettings }: Props) {
                         {hasReadAloud && (
                             <PressableReadAloud active={isReading} onPress={toggle} />
                         )}
-
-                        <View className="absolute bottom-6 left-6">
-                            <ParentalLockButton onUnlock={onOpenSettings} />
-                        </View>
 
                         {showCelebration && (
                             <CelebrationOverlay onClose={() => setShowCelebration(false)} />

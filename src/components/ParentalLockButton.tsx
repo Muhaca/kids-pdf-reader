@@ -1,57 +1,70 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Pressable, Text, View } from "react-native";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
     withTiming,
     cancelAnimation,
-    runOnJS,
 } from "react-native-reanimated";
 
 type Props = {
     onUnlock: () => void;
+    locked?: boolean;
 };
 
-const HOLD_DURATION = 3000;
+const HOLD_DURATION = 1500;
+const SUN = "#FFC857";
+const TEAL = "#1F6F63";
 
-export function ParentalLockButton({ onUnlock }: Props) {
+export function ParentalLockButton({ onUnlock, locked = false }: Props) {
     const progress = useSharedValue(0);
-    const [holding, setHolding] = useState(false);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const ringStyle = useAnimatedStyle(() => ({
         transform: [{ scale: 1 + progress.value * 0.4 }],
         opacity: 0.35 + progress.value * 0.4,
     }));
 
+    useEffect(
+        () => () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        },
+        []
+    );
+
     const handlePressIn = () => {
-        setHolding(true);
-        progress.value = withTiming(1, { duration: HOLD_DURATION }, (finished) => {
-            if (finished) runOnJS(onUnlock)();
-        });
+        if (locked) return;
+        if (timerRef.current) clearTimeout(timerRef.current);
+        progress.value = withTiming(1, { duration: HOLD_DURATION });
+        timerRef.current = setTimeout(() => {
+            timerRef.current = null;
+            onUnlock();
+        }, HOLD_DURATION);
     };
 
     const handlePressOut = () => {
-        setHolding(false);
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
         cancelAnimation(progress);
         progress.value = withTiming(0, { duration: 200 });
     };
 
     return (
         <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} style={{ zIndex: 20, elevation: 20 }}>
-            <View className="w-12 h-12 items-center justify-center">
+            <View className="w-11 h-11 items-center justify-center">
                 <Animated.View
-                    style={ringStyle}
-                    className="absolute w-12 h-12 rounded-full bg-story-sun"
+                    style={[ringStyle, { backgroundColor: SUN }]}
+                    className="absolute w-11 h-11 rounded-full"
                 />
-                <View className="w-11 h-11 rounded-full bg-black/50 items-center justify-center">
-                    <Text style={{ fontSize: 18 }}>🔒</Text>
+                <View
+                    className="w-10 h-10 rounded-full items-center justify-center"
+                    style={{ backgroundColor: locked ? TEAL : "rgba(0,0,0,0.5)" }}
+                >
+                    <Text style={{ fontSize: 16 }}>🔒</Text>
                 </View>
             </View>
-            {holding && (
-                <Text className="text-white text-[10px] text-center mt-1 font-semibold">
-                    Tahan...
-                </Text>
-            )}
         </Pressable>
     );
 }

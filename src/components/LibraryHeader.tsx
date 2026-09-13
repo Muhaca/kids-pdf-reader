@@ -7,12 +7,15 @@ import Animated, {
     withSequence,
     withTiming,
 } from "react-native-reanimated";
+import { ParentalLockButton } from "./ParentalLockButton";
 
 type Props = {
     onOpenHelp: () => void;
+    onOpenSettings: () => void;
+    locked?: boolean;
 };
 
-export function LibraryHeader({ onOpenHelp }: Props) {
+export function LibraryHeader({ onOpenHelp, onOpenSettings, locked = false }: Props) {
     const wiggle = useSharedValue(0);
 
     useEffect(() => {
@@ -52,7 +55,7 @@ export function LibraryHeader({ onOpenHelp }: Props) {
                             className="text-story-cream"
                             style={{ fontFamily: "Baloo2_700Bold", fontSize: 24 }}
                         >
-                            Halo, teman kecil!
+                            Halo, teman Maca!
                         </Text>
                         <Text
                             className="text-story-cream-soft"
@@ -64,9 +67,7 @@ export function LibraryHeader({ onOpenHelp }: Props) {
                 </View>
 
                 <View className="flex-col items-end gap-2">
-                    <View className="rounded-full w-11 h-11 items-center justify-center bg-story-coral">
-                        <Text style={{ fontSize: 18 }}>📖</Text>
-                    </View>
+                    <ParentalLockButton onUnlock={onOpenSettings} locked={locked} />
                     <Pressable
                         onPress={onOpenHelp}
                         accessibilityRole="button"
