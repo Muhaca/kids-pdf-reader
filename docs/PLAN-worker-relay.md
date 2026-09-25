@@ -10,7 +10,7 @@ Diperbarui: 2026-09-26 · Worker live di `https://maca-pdf.muhamadcasdi.workers.
 | Fork | Dipilih | Alasan |
 | --- | --- | --- |
 | Bentuk worker | Relay passthrough, `Cache-Control: no-store` | Tidak ada salinan body di R2/edge → bukan "diperbanyak" (Pasal 49 UU 28/2014) |
-| Lokasi | Worker baru `maca-pdf` di repo app | `portofolio/wrangler.toml` masih placeholder `<BUCKET_NAME>`; deploy CLI dari sana berisiko merusak binding portfolio |
+| Lokasi | Worker baru `maca-pdf` di repo app | `portofolio` juga menyimpan manifest buku, jadi satu worker tidak boleh gagal karena perubahan deploy di sana (repo `portofolio` sekarang sudah sinkron, lihat temuan #4) |
 | Cache edge | Tidak ada (`caches.default` tidak dipakai) | 206 dari Range tidak bisa di-cache; menyimpan salinan = risiko 🟡 → 🟠 |
 | Saat worker down | Fallback otomatis ke URL origin | Worker down tidak membuat pustaka mati |
 | Scope | Passthrough saja (Workstream A/B terpisah) | Batch kecil & mudah di-rollback |
@@ -136,13 +136,27 @@ open proxy (pemicu abuse report + auto-disable Cloudflare).
    (prefix dibuang). Konsekuensi:
    - `audit-sizes.js` → `R2_KEY = "manifest.json"` (sudah dikoreksi; upload pertama sempat
      menulis key `books/manifest.json` yang tidak terjangkau worker, sudah dihapus & di-backup)
-   - `upload.js` di `kids-book-uploader` justru memakai key `manifest.json` — jadi **benar**
-     untuk key, tapi `coverUrl`/`pdfUrl` masih menunjuk R2 (bukan aman) dan kategori akan
-     kosong kalau manifest di-build ulang dari nol. Jangan dipakai untuk regenerate.
+    - `upload.js` di `kids-book-uploader` memang memakai key `manifest.json` — jadi **benar**
+      untuk key, tapi `coverUrl`/`pdfUrl` menunjuk R2 (bukan aman). Jangan dipakai untuk
+      regenerate; pakai `scripts/audit-sizes.js --upload`.
+      **✅ Sudah diamankan (commit `kids-book-uploader` `10b42ce`)**: kegagalan baca manifest
+      tidak lagi diperlakukan sebagai "manifest kosong" (kredensial/bucket salah → berhenti),
+      key yang hilang → berhenti kecuali di-opt-in `ALLOW_EMPTY_MANIFEST=1`, total buku
+      `< 50` → berhenti, dan manifest lama di-backup sebelum ditimpa.
+
    - Manifest bisa dibaca dari repo ini juga: `npx wrangler r2 object get "kids-books/manifest.json" --file m.json --remote`
 4. Kode worker `portfolio-assets` yang ada di repo `portofolio` **tidak sama** dengan yang
    ter-deploy (repo: key = pathname apa adanya; ter-deploy: prefix `books/` dibuang).
    `portofolio/wrangler.toml` juga masih `<BUCKET_NAME>`. Jangan deploy dari sana.
+   **✅ Sudah DICOCOKKAN (commit `portofolio` `52fd70d`)** — `wrangler.toml` sekarang dua
+   binding (`ASSETS_BUCKET` → `portofolio`, `BOOKS_BUCKET` → `kids-books`,
+   `compatibility_date = 2026-09-12`) dan `index.js` punya routing `/books/<key>`.
+   Worker yang live **tetap versi dashboard** (version `949be940`, 2026-09-25 16:14,
+   `Source: Upload`) — repo sudah disinkron tapi **belum dideploy**, dan itu memang
+   yang diinginkan. Parity dibuktikan tanpa deploy: `wrangler dev --remote` vs live
+   identik di 8 path (status, content-type, ukuran, ETag, body byte-identik untuk
+   `manifest.json` & `projects.json`). Kalau nanti mau deploy dari repo, smoke test
+   `/projects.json` situs portfolio dulu — worker itu melayani situs, bukan cuma app.
 5. `compatibility_date` harus `≤ 2026-09-01`; `2026-09-26` ditolak workerd lokal.
 6. `cache-control: public, max-age=86400` di worker `portfolio-assets` → manifest baru
    bisa terlihat device dalam ≤ 24 jam. Tidak masalah: `bytes` opsional, progress tetap jalan
