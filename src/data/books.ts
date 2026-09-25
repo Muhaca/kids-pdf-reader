@@ -1,7 +1,6 @@
 import { Book } from "../types/book";
 import { readManifestCache, writeManifestCache } from "../services/storage";
-
-const MANIFEST_URL = "https://portfolio-assets.muhamadcasdi.workers.dev/books/manifest.json";
+import { MANIFEST_URL } from "../config";
 
 // Kalau server tidak mengirim ETag, jangan nge-fetch lebih sering dari jeda ini.
 const REVALIDATE_COOLDOWN_MS = 15 * 60 * 1000;

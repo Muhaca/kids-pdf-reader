@@ -1,0 +1,16 @@
+# Buku yang SENGAJA dicabut dari sumber — dibaca scripts/build-origin-map.mjs.
+# Satu id per baris, tanpa tanda kutip. Baris kosong & yang diawali "#" diabaikan.
+#
+# Efeknya:
+#   - id TIDAK lagi masuk ke ORIGINS (kalau iya, lookup di worker/index.js akan
+#     menemukan ORIGINS dulu dan tetap melayaninya, bukan membalas 410)
+#   - id masuk ke REMOVED → worker membalas 410 { code: "book_removed" }
+#   - app berhenti mencoba mengunduh dan menampilkan "buku ini dicabut dari sumber"
+#
+# Jangan dihapus begitu sumbernya hidup lagi: hapus barisnya, regenerate, deploy.
+# Alasan dicatat di docs/PLAN-worker-relay.md.
+
+# 2026-09-26 · host ik.imagekit.io mati total (DNS -> lamanlabuh.aduankonten.id,
+# connection refused dari origin kita). Bukan sementara: 87 halaman, 0 byte
+# bisa diambil. Sumber aslinya sudah tidak menaruh file ini di host yang hidup.
+buku-bacaan-berkualitas-untuk-menguatkan-transisi-paud-ke-sd-yang-menyenangkan

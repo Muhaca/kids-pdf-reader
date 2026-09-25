@@ -1,7 +1,9 @@
 # Rencana: Worker Relay (passthrough) + Hotlink
 
-Status: 🔵 ACCEPED — belum diimplementasikan
+Status: 🟢 Fase 1–3 SELESAI & ter-deploy — tinggal verifikasi manual di perangkat (Fase 4)
 Dibuat: 2026-09-26 · Repo: `kids-pdf-reader` · Worker: `maca-pdf`
+Diperbarui: 2026-09-26 · Worker live di `https://maca-pdf.muhamadcasdi.workers.dev`
+(version `0cf32ac1-e10d-4080-be68-540d804174b7`) · `RELAY_ENABLED = true`
 
 ## Keputusan
 
@@ -43,17 +45,27 @@ Dibuat: 2026-09-26 · Repo: `kids-pdf-reader` · Worker: `maca-pdf`
 - [x] Keputusan arsitektur diambil (tabel di atas)
 - [x] Commit perubahan `src/data/books.ts` (URL manifest → worker) — `497d6e6`
 
-## Fase 1 — Worker relay 🔲 BELUM
+## Fase 1 — Worker relay ✅ SELESAI & TER-DEPLOY
 
-- [ ] `scripts/build-origin-map.js` — GET manifest live → tulis allowlist
-- [ ] `worker/origins.generated.js` — GENERATED, `ORIGINS = { [id]: { url, host, bytes } }` + `REMOVED`
-- [ ] `worker/index.js` — `GET|HEAD /books/pdf/:id`, `GET /health`
-- [ ] `wrangler.jsonc` — `name: "maca-pdf"`, tanpa `r2_buckets`
-- [ ] Smoke test:
-      - HEAD bandingkan `content-length` vs origin (satu per origin)
-      - id ngawur → 404 · buku mati → 410
-      - `Range: bytes=0-1023` → 206 + `content-range`
-      - tidak ada `cf-cache-status: HIT` di response
+- [x] `scripts/build-origin-map.mjs` — GET manifest live → tulis allowlist
+      (`.mjs` supaya tidak perlu `"type": "module"` di package.json Expo)
+- [x] `worker/removed.txt` — daftar id yang dicabut (disunting manual, dibaca generator)
+- [x] `worker/origins.generated.js` — GENERATED, **278 entri** + `REMOVED` (1 id)
+- [x] `worker/index.js` — `GET|HEAD /books/pdf/:id`, `GET /health`
+- [x] `wrangler.jsonc` — `name: "maca-pdf"`, tanpa `r2_buckets`
+- [x] `npx wrangler deploy` → `https://maca-pdf.muhamadcasdi.workers.dev` (11,47 KiB gzip)
+- [x] Smoke test **di edge** (semua ✅):
+      | Cek | Hasil |
+      | --- | --- |
+      | `/health` | `x-maca-books: 278`, `x-maca-removed: 1` |
+      | `HEAD /books/pdf/jangan-dekat-dekat` | `content-length: 4527430` = identik dengan `curl -I -A "Maca/1.0" <origin>` |
+      | `HEAD` buku terbesar per host (3 host) | 200 `application/pdf`, ukuran = `bytes` di manifest |
+      | `Range: bytes=0-1023` | 206 + `content-range: bytes 0-1023/4527430`, body `%PDF-1.5` |
+      | `Range` di buku 128 MB (byte terakhir & tengah) | 206 + `content-range` benar |
+      | `GET` penuh 4,5 MB | 200, 4.527.430 byte, ditutup `%%EOF` |
+      | id ngawur / path ngawur / `POST` | 404 `unknown_book` / 404 `not_found` / 405 |
+      | id di `REMOVED` | **410 `book_removed`** |
+      | `cf-cache-status` | tidak ada di response ✅ (tidak ada cache edge) |
 
 ### Perilaku worker
 
@@ -70,41 +82,94 @@ GET /books/pdf/:id
 Kunci keamanan: URL diambil dari **allowlist**, bukan query param → worker tidak bisa menjadi
 open proxy (pemicu abuse report + auto-disable Cloudflare).
 
-## Fase 2 — Enrichment manifest (metadata saja) 🔲 BELUM
+## Fase 2 — Enrichment manifest ✅ SELESAI & LIVE
 
-- [ ] `kids-book-uploader/scripts/audit-sizes.js` — 279× `HEAD` (bukan GET; tidak menyimpan
+- [x] `kids-book-uploader/scripts/audit-sizes.js` — 279× `HEAD` (bukan GET; tidak menyimpan
       isi → bukan penggandaan), paralel 8, retry 1×, timeout 15 s
-- [ ] Tambah field `bytes`, `origin`, `removed`, `verifiedAt` — **pertahankan** 6 field lama dan
-      12 kategori yang sekarang (jangan regenerate dari `upload.js`, kategori akan kosong)
-- [ ] Upload `books/manifest.json` ke R2 lewat S3 client yang sudah ada di `kids-book-uploader`
-- [ ] Verifikasi: `curl $MANIFEST_URL | jq '.[0]'`
+- [x] Audit → `kids-book-uploader/books/manifest.json` + `books/audit-report.json`
+      - 278/279 bisa diukur · total **1.825 MB** · rata-rata 6,6 MB
+      - terbesar **122,3 MB** (`lari-gajah-kurcaci`) · terkecil 0,8 MB
+      - 9 buku > 25 MB · 1 buku > 100 MB
+      - 1 gagal: `buku-bacaan-berkualitas-untuk-menguatkan-transisi-paud-ke-sd-yang-menyenangkan`
+        (`ik.imagekit.io` → DNS ke `lamanlabuh.aduankonten.id`, connection refused)
+- [x] 6 field lama + 12 kategori dipertahankan (script gagal-diri kalau ada field berubah)
+- [x] `npm run worker:origins -- --sizes ../kids-book-uploader/books/manifest.json`
+      → kolom `bytes` terisi di `worker/origins.generated.js`
+- [x] Upload ke R2 (backup: `kids-book-uploader/backup/manifest-2026-09-25T18-12-26-671Z.json`)
+      → live: 279 buku, 12 kategori, field `bytes/origin/verifiedAt` ada di 278 buku
+- [x] Buku `ik.imagekit.io` → masuk `worker/removed.txt` (worker balas 410, bukan 502)
 
-## Fase 3 — App 🔲 BELUM
+## Fase 3 — App ✅ SELESAI (relay aktif)
 
-- [ ] `src/config.ts` — `MANIFEST_URL`, `PDF_RELAY_URL`, `CLIENT_UA`, `RELAY_ENABLED`, `MAX_WARN_BYTES`
-- [ ] `src/hooks/usePdfLoader.ts` (rewrite 59 → ~140 baris)
+- [x] `src/config.ts` — `MANIFEST_URL`, `PDF_RELAY_URL`, `CLIENT_UA`, `RELAY_ENABLED`, `MAX_WARN_BYTES`
+- [x] `src/hooks/usePdfLoader.ts` (rewrite 59 → 195 baris)
       - URL → `${PDF_RELAY_URL}/books/pdf/${id}`
       - destination eksplisit `new File(dir, \`${book.id}.pdf\`)` — membereskan bug `%20` / `?` /
         tabrakan nama
       - `createDownloadTask` + `onProgress` + `signal` (cancel) + hapus file parsial
       - fallback berjenjang: worker → retry → origin langsung (header sama), diam-diam
+      - **410 = terminal** (buku dicabut → stop, jangan retry/fallback).
+        **404 bukan terminal** = `unknown_book` → fallback origin (allowlist worker bisa
+        tertinggal kalau manifest nambah buku)
+      - file cache dipakai ulang hanya kalau ukurannya cocok dengan `book.bytes`
       - return `{ uri, error, isDownloading, progress, retry, cancel }`, `error` ber-`code`
-- [ ] `src/screens/ReaderScreen.tsx` — progress bar + "6,9 MB dari 12,4 MB" + tombol batal ·
-      `onError` (`:135`) dari `console.log` → overlay + **Coba Lagi** ·
+- [x] `src/screens/ReaderScreen.tsx` — progress bar + "6,9 MB dari 12,4 MB" + tombol batal ·
+      `onError` dari `console.log` → overlay + **Coba Lagi** ·
       warning bila `book.bytes > MAX_WARN_BYTES`
-- [ ] `src/types/book.ts` — `bytes?`, `origin?`, `removed?`, `source?` (opsional)
-- [ ] `src/components/ParentSettingsModal.tsx` — sheet "Tentang sumber buku": atribusi,
-      badge non-komersial, `mailto:buku@kemendikdasmen.go.id`, kanal resmi
-- [ ] `package.json` — tambah `"typecheck": "tsc --noEmit"` (tidak menambah eslint)
-- [ ] `npm run typecheck`
+- [x] `src/types/book.ts` — `bytes?`, `origin?`, `removed?`, `source?` (opsional)
+- [x] `src/components/ParentSettingsModal.tsx` — sheet "Tentang sumber buku": atribusi,
+      badge non-komersial, `mailto:buku@kemendikdasmen.go.id` (`formatBytes` di `src/lib/format.ts`)
+- [x] `package.json` — `"typecheck": "tsc --noEmit"` (tidak menambah eslint)
+- [x] `npm run typecheck` ✅ · `npx expo export --platform android` ✅
+- [x] `RELAY_ENABLED = true`
 
-## Fase 4 — Verifikasi manual 🔲 BELUM
+## Temuan saat implementasi (perubahan dari rencana awal)
 
-- [ ] Wi-Fi mati total → fallback → error UI
-- [ ] Worker di-down → app tetap bisa membaca
-- [ ] Buku 128 MB → progress + batal
-- [ ] Cold start 2× → file cache dipakai ulang
-- [ ] `git status` bersih setelah semua fase
+1. **`budi.kemendikdasmen.go.id` memblokir `curl/*` dengan 403.** Origin yang sama balas
+   200 + `application/pdf` untuk UA okhttp/Dalvik/Maca. Konsekuensi: `CLIENT_UA` **wajib**
+   diisi (config + header eksplisit di worker), dan jangan pernah smoke-test origin pakai
+   `curl` polos — hasilnya 403 palsu, bikin kesimpulan "buku mati".
+2. **`ik.imagekit.io` mati** (DNS → `lamanlabuh.aduankonten.id`, connection refused).
+   1 dari 279 buku → masuk `worker/removed.txt`, worker balas 410.
+3. **Key R2 yang sebenarnya adalah `manifest.json`, bukan `books/manifest.json`.** Worker
+   `portfolio-assets` memetakan `/books/<key>` → key `<key>` di bucket `kids-books`
+   (prefix dibuang). Konsekuensi:
+   - `audit-sizes.js` → `R2_KEY = "manifest.json"` (sudah dikoreksi; upload pertama sempat
+     menulis key `books/manifest.json` yang tidak terjangkau worker, sudah dihapus & di-backup)
+   - `upload.js` di `kids-book-uploader` justru memakai key `manifest.json` — jadi **benar**
+     untuk key, tapi `coverUrl`/`pdfUrl` masih menunjuk R2 (bukan aman) dan kategori akan
+     kosong kalau manifest di-build ulang dari nol. Jangan dipakai untuk regenerate.
+   - Manifest bisa dibaca dari repo ini juga: `npx wrangler r2 object get "kids-books/manifest.json" --file m.json --remote`
+4. Kode worker `portfolio-assets` yang ada di repo `portofolio` **tidak sama** dengan yang
+   ter-deploy (repo: key = pathname apa adanya; ter-deploy: prefix `books/` dibuang).
+   `portofolio/wrangler.toml` juga masih `<BUCKET_NAME>`. Jangan deploy dari sana.
+5. `compatibility_date` harus `≤ 2026-09-01`; `2026-09-26` ditolak workerd lokal.
+6. `cache-control: public, max-age=86400` di worker `portfolio-assets` → manifest baru
+   bisa terlihat device dalam ≤ 24 jam. Tidak masalah: `bytes` opsional, progress tetap jalan
+   dari `content-length` saat unduhan.
+
+## Perintah rawan (kalau perlu)
+```bash
+W=https://maca-pdf.muhamadcasdi.workers.dev
+curl -sI $W/health | grep -i x-maca
+curl -sI $W/books/pdf/jangan-dekat-dekat | grep -iE 'content-length|content-type|x-maca'
+curl -sI -H 'Range: bytes=0-1023' $W/books/pdf/jangan-dekat-dekat | grep -iE 'HTTP|content-range'
+curl -s  $W/books/pdf/buku-palsu-xyz     # {"code":"unknown_book",...}
+curl -sI $W/books/pdf/<id-di-removed.txt> # 410 book_removed
+# rollback: npx wrangler rollback  |  hapus: npx wrangler delete maca-pdf
+```
+
+## Fase 4 — Verifikasi manual di perangkat 🔲 BELUM
+
+Butuh build baru (`npx expo run:android` / `run:ios`) — `RELAY_ENABLED` dan
+`usePdfLoader` berubah setelah build terakhir.
+
+- [ ] Wi-Fi mati total → fallback → error UI → **Coba Lagi** jalan
+- [ ] Buka buku besar (122 MB) → progress bar + "X dari 122,3 MB" + **Batalkan** bekerja
+- [ ] Buka buku yang sama 2× (cold start) → file cache dipakai ulang, tanpa unduhan
+- [ ] Buka buku `buku-bacaan-berkualitas-...` (di `removed.txt`) → pesan "dicabut", bukan spinner
+- [ ] Matikan worker (`npx wrangler delete maca-pdf`) → app tetap bisa membaca buku
+- [ ] `git status` bersih
 
 ## Di luar scope (sengaja) ⛔
 
@@ -115,9 +180,13 @@ PDF · TTS/nyaring (`story` masih tidak ada di manifest) · progress resume & se
 
 ## Risiko terbuka ⚠️
 
-- [ ] Nama worker `maca-pdf` mungkin sudah dipakai → URL jadi `maca-pdf.<subdomain>.workers.dev`
+- [x] Nama worker `maca-pdf` bebas dipakai ✅ → `maca-pdf.muhamadcasdi.workers.dev`
 - [ ] Tidak ada rate limit per-user; andalkan `no-store` + fallback
 - [ ] `portofolio/src/lib/data.ts` masih ada perubahan belum di-commit — repo lain, tidak
       disentuh oleh rencana ini
+- [ ] `portofolio/wrangler.toml` masih `<BUCKET_NAME>` & kode worker di repo ≠ yang
+      ter-deploy (lihat temuan #4) — jangan deploy dari repo itu
 - [ ] PDF 128 MB tetap boros kuota seluler; passthrough tidak menyelesaikan ini (konsekuensi
       drop C1). Mitigasi: warning ukuran + `MAX_WARN_BYTES`
+- [ ] `upload.js` di uploader tetap generates `coverUrl`/`pdfUrl` ke R2 + kategori kosong —
+      pakai `audit-sizes.js`, bukan `upload.js`, untuk memperbarui manifest

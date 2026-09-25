@@ -1,0 +1,11 @@
+{
+    // Worker relay PDF untuk app Maca (kids-pdf-reader).
+    // Tanpa r2_buckets & tanpa caches: body PDF tidak pernah disimpan/disalin,
+    // hanya diteruskan dari server asal ke app (lihat docs/PLAN-worker-relay.md).
+    "name": "maca-pdf",
+    "main": "worker/index.js",
+    "compatibility_date": "2026-09-01",
+    "observability": {
+        "enabled": true
+    }
+}

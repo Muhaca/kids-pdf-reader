@@ -10,6 +10,8 @@ import { setProgress } from "../services/storage";
 import { ReaderControls } from "../components/ReaderControls";
 import { CelebrationOverlay } from "../components/CelebrationOverlay";
 import { IconButton } from "../components/IconButton";
+import { MAX_WARN_BYTES } from "../config";
+import { formatBytes } from "../lib/format";
 
 type Props = {
     book: Book;
@@ -17,13 +19,17 @@ type Props = {
 };
 
 export function ReaderScreen({ book, onClose }: Props) {
-    const { uri, error, isDownloading } = usePdfLoader(book);
+    const { uri, error, isDownloading, progress, retry, cancel } = usePdfLoader(book);
     const pdfRef = useRef<PdfRef>(null);
 
     const [page, setPage] = useState(1);
     const [numPages, setNumPages] = useState(0);
     const [showCelebration, setShowCelebration] = useState(false);
     const [celebrationShown, setCelebrationShown] = useState(false);
+    // PDF-nya sudah ada di disk tapi reader native gagal membukanya → tampilkan
+    // overlay, jangan diam-diam layar kosong.
+    const [pdfError, setPdfError] = useState<string | null>(null);
+    const [pdfAttempt, setPdfAttempt] = useState(0);
 
     const [dimensions, setDimensions] = useState(() => {
         const { width, height } = Dimensions.get("window");
@@ -96,10 +102,16 @@ export function ReaderScreen({ book, onClose }: Props) {
                 {error && (
                     <View className="flex-1 items-center justify-center px-8">
                         <Text style={{ fontSize: 48 }}>🦉</Text>
-                        <Text className="text-white text-center text-base mt-3 mb-4">{error}</Text>
+                        <Text className="text-white text-center text-base mt-3 mb-4">{error.message}</Text>
+                        <Text
+                            onPress={retry}
+                            className="text-story-ink bg-story-sun font-extrabold px-6 py-3 rounded-full overflow-hidden mb-3"
+                        >
+                            Coba Lagi
+                        </Text>
                         <Text
                             onPress={onClose}
-                            className="text-story-ink bg-story-sun font-extrabold px-6 py-3 rounded-full overflow-hidden"
+                            className="text-white/80 text-center text-sm underline"
                         >
                             Kembali ke koleksi
                         </Text>
@@ -107,17 +119,41 @@ export function ReaderScreen({ book, onClose }: Props) {
                 )}
 
                 {!error && !uri && (
+                    <DownloadPanel
+                        isDownloading={isDownloading}
+                        written={progress.written}
+                        total={progress.total || book.bytes || 0}
+                        expectedBytes={book.bytes}
+                        onCancel={cancel}
+                    />
+                )}
+
+                {pdfError && (
                     <View className="flex-1 items-center justify-center px-8">
-                        <ActivityIndicator color="#FFC857" size="large" />
-                        <Text className="text-white text-xs mt-3">
-                            {isDownloading ? "Mengunduh buku..." : "Menyiapkan buku..."}
+                        <Text style={{ fontSize: 48 }}>📕</Text>
+                        <Text className="text-white text-center text-base mt-3 mb-1">
+                            Halaman bukunya tidak bisa dibuka.
+                        </Text>
+                        <Text className="text-white/70 text-center text-xs mb-4">{pdfError}</Text>
+                        <Text
+                            onPress={() => {
+                                setPdfError(null);
+                                setPdfAttempt((n) => n + 1);
+                            }}
+                            className="text-story-ink bg-story-sun font-extrabold px-6 py-3 rounded-full overflow-hidden mb-3"
+                        >
+                            Coba Lagi
+                        </Text>
+                        <Text onPress={onClose} className="text-white/80 text-center text-sm underline">
+                            Kembali ke koleksi
                         </Text>
                     </View>
                 )}
 
-                {!error && uri && (
+                {!error && !pdfError && uri && (
                     <>
                         <Pdf
+                            key={pdfAttempt}
                             ref={pdfRef}
                             source={{ uri, cache: true }}
                             // PENTING: enablePaging/horizontal/fitPolicy dibuat KONSTAN.
@@ -130,9 +166,15 @@ export function ReaderScreen({ book, onClose }: Props) {
                             minScale={1}
                             maxScale={3}
                             enableDoubleTapZoom={false}
-                            onLoadComplete={(total) => setNumPages(total)}
+                            onLoadComplete={(total) => {
+                                setPdfError(null);
+                                setNumPages(total);
+                            }}
                             onPageChanged={(p) => setPage((cur) => (cur === p ? cur : p))}
-                            onError={(err) => console.log("PDF ERROR:", err)}
+                            onError={(err) => {
+                                const message = String((err as { message?: string })?.message ?? err);
+                                setPdfError(message.slice(0, 160));
+                            }}
                             style={{ flex: 1, backgroundColor: "#D99730" }}
                         />
 
@@ -158,6 +200,67 @@ export function ReaderScreen({ book, onClose }: Props) {
                 )}
             </View>
         </SafeAreaView>
+    );
+}
+
+function DownloadPanel({
+    isDownloading,
+    written,
+    total,
+    expectedBytes,
+    onCancel,
+}: {
+    isDownloading: boolean;
+    written: number;
+    total: number;
+    expectedBytes?: number;
+    onCancel: () => void;
+}) {
+    const percent = total > 0 ? Math.min(100, Math.round((written / total) * 100)) : 0;
+    const isBig = Boolean(expectedBytes && expectedBytes > MAX_WARN_BYTES);
+
+    return (
+        <View className="flex-1 items-center justify-center px-8">
+            <ActivityIndicator color="#FFC857" size="large" />
+
+            {isDownloading ? (
+                <>
+                    <View className="w-full max-w-[320px] mt-5">
+                        <View className="h-2.5 rounded-full bg-white/20 overflow-hidden">
+                            <View
+                                className="h-full rounded-full bg-story-sun"
+                                style={{ width: `${percent}%` }}
+                            />
+                        </View>
+                        <Text className="text-white/90 text-center text-xs mt-2">
+                            {total > 0
+                                ? `${formatBytes(written)} dari ${formatBytes(total)} · ${percent}%`
+                                : `${formatBytes(written)}`}
+                        </Text>
+                    </View>
+
+                    <Text
+                        onPress={onCancel}
+                        accessibilityRole="button"
+                        className="text-white/80 text-xs mt-5 underline"
+                    >
+                        Batalkan
+                    </Text>
+                </>
+            ) : (
+                <Text className="text-white text-xs mt-3">Menyiapkan buku...</Text>
+            )}
+
+            {isBig && expectedBytes && (
+                <View className="w-full max-w-[320px] mt-6 bg-black/35 rounded-2xl px-4 py-3">
+                    <Text className="text-story-sun font-bold text-xs">Buku ini besar</Text>
+                    <Text className="text-white/80 text-xs leading-5 mt-1">
+                        Sekitar {formatBytes(expectedBytes)}. Pakai Wi-Fi supaya kuota seluler
+                        tidak habis. Boleh dibatalkan kapan saja.
+                    </Text>
+                </View>
+            )}
+        </View>
     );
 }
 
